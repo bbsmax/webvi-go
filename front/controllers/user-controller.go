@@ -15,8 +15,8 @@ type UserController struct {
 }
 
 var (
-	userService  = services.UserService{}
-	errorMessage = utils.ErrorMessage{}
+	userService     = services.UserService{}
+	responseMessage = utils.ReturnMessage{}
 )
 
 //회원로그인
@@ -40,7 +40,7 @@ func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 	//userService := services.UserService{}
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
-		errorMessage.ErrorMsg(w, "internal server error", http.StatusInternalServerError)
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
@@ -50,18 +50,18 @@ func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 	//body r.Body
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		//TODO 에러메세지 발생.
-		errorMessage.ErrorMsg(w, "internal server error", http.StatusInternalServerError)
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	//validate
 	if err := requestData.Validate(); err != nil {
-		errorMessage.ErrorMsg(w, err.Error(), http.StatusBadRequest)
+		responseMessage.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
 		return
 	}
 
 	if _, err := userService.Create(requestData, c.DB); err != nil {
-		errorMessage.ErrorMsg(w, err.Message, err.StatusCode)
+		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
 	}
 }
 

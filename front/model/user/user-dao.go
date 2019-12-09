@@ -11,13 +11,13 @@ import (
 //DB와 데이터를 주고 받는 기능을 한다.
 
 var (
-	errorMsg = &utils.ErrorMessage{}
+	errorMsg = &utils.ReturnMessage{}
 )
 
 type UserDto struct{}
 
 //이메일로 회원유무를 검사.
-func (u *UserDto) FindUser(requestData *dto.UserRequest, db *gorm.DB) (bool, *utils.ErrorMessage) {
+func (u *UserDto) FindUser(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 	userEmail := requestData.Email
 	user := User{}
 
@@ -25,18 +25,18 @@ func (u *UserDto) FindUser(requestData *dto.UserRequest, db *gorm.DB) (bool, *ut
 	query := db.Where("email = ?", userEmail).Find(&user)
 
 	if res := query.RecordNotFound(); res {
-		return false, errorMsg.ReturnErrorMsg(fmt.Sprintf("user email [%v] not find", userEmail), http.StatusNoContent)
+		return false, errorMsg.ReturnMsg(fmt.Sprintf("user email [%v] not find", userEmail), http.StatusNoContent, "no content")
 	}
 
 	if err := query.Error; err != nil {
-		return false, errorMsg.ReturnErrorMsg(err.Error(), http.StatusInternalServerError)
+		return false, errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
 	}
 
 	return true, nil
 }
 
 //회원가입 진행.
-func (u *UserDto) SignupCreate(requestData *dto.UserRequest, db *gorm.DB) *utils.ErrorMessage {
+func (u *UserDto) SignupCreate(db *gorm.DB, requestData *dto.UserRequest) *utils.ReturnMessage {
 
 	user := User{
 		ID:       requestData.ID,
@@ -49,7 +49,7 @@ func (u *UserDto) SignupCreate(requestData *dto.UserRequest, db *gorm.DB) *utils
 	res := db.Save(&user)
 
 	if err := res.Error; err != nil {
-		return errorMsg.ReturnErrorMsg(err.Error(), http.StatusInternalServerError)
+		return errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
 	}
 
 	return nil
