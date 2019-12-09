@@ -21,7 +21,7 @@ func (r UserRequest) Validate() error {
 	} else if r.Password == "" {
 		errs = errors.New("The password field should be a valid password!")
 	} else if r.Name == "" {
-		errs = errors.New("The name field should be a valid name!")
+		errs = errors.New("The name field should be a required!")
 	}
 	return errs
 }
