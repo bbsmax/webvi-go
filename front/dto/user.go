@@ -14,6 +14,15 @@ type UserRequest struct {
 	Role        string `json:"role"`
 }
 
+type UserResponse struct {
+	ID          string `json:"ID"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
+	Role        string `json:"role"`
+	Avator      string `json:"avator"`
+}
+
 func (r UserRequest) Validate() error {
 	var errs error
 	if !utils.EmailCheck(r.Email) {

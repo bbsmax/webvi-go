@@ -18,10 +18,10 @@ var (
 	returnMsg = utils.ReturnMessage{}
 )
 
-func (u *UserService) Create(requestData *dto.UserRequest, db *gorm.DB) (bool, *utils.ReturnMessage) {
+func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 
 	//1. 이메일로 회원이 존재하는지 검사.
-	if isUser, err := userDto.FindUser(db, requestData); !isUser {
+	if isUser, err := userDto.Find(db, requestData); !isUser {
 		//회원이 존재하지 않은 경우.
 		//2. 회원비밀번호를 sha256, sha512로 변환.
 		id := uuid.New()
@@ -29,7 +29,7 @@ func (u *UserService) Create(requestData *dto.UserRequest, db *gorm.DB) (bool, *
 		requestData.ID = id.String()
 		requestData.Password = password
 		//3. 회원데이터 저장
-		if err := userDto.SignupCreate(db, requestData); err != nil {
+		if err := userDto.Create(db, requestData); err != nil {
 			return false, returnMsg.ReturnMsg(fmt.Sprintf("server error [%v]", err), http.StatusInternalServerError, "internal server error")
 		}
 
@@ -46,8 +46,20 @@ func (u *UserService) Create(requestData *dto.UserRequest, db *gorm.DB) (bool, *
 	return true, nil
 }
 
-func (u *UserService) Update(requestData *dto.UserRequest, db *gorm.DB) (bool, *utils.ReturnMessage) {
+//회원의 상세정보
+func (u *UserService) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnMessage) {
+
+	return userDto.Get(db, ID)
+}
+
+func (u *UserService) Update(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 	//1. ID와 password로 해당 회원이 맞는지 확인
 	//2. 회원이 맞으면 회원정보 업데이트
 	return true, nil
+}
+
+func (u *UserService) Delete(db *gorm.DB, ID string) (string, *utils.ReturnMessage) {
+	//1. ID와 password로 해당 회원이 맞는지 확인
+	//2. 회원이 맞으면 회원정보 업데이트
+	return userDto.Delete(db, ID)
 }

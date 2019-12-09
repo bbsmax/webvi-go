@@ -17,7 +17,7 @@ var (
 type UserDto struct{}
 
 //이메일로 회원유무를 검사.
-func (u *UserDto) FindUser(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
+func (u *UserDto) Find(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 	userEmail := requestData.Email
 	user := User{}
 
@@ -36,7 +36,7 @@ func (u *UserDto) FindUser(db *gorm.DB, requestData *dto.UserRequest) (bool, *ut
 }
 
 //회원가입 진행.
-func (u *UserDto) SignupCreate(db *gorm.DB, requestData *dto.UserRequest) *utils.ReturnMessage {
+func (u *UserDto) Create(db *gorm.DB, requestData *dto.UserRequest) *utils.ReturnMessage {
 
 	user := User{
 		ID:       requestData.ID,
@@ -56,11 +56,41 @@ func (u *UserDto) SignupCreate(db *gorm.DB, requestData *dto.UserRequest) *utils
 }
 
 //회원정보 업데이트.
-func (u *UserDto) SignupUpdate(requestData *dto.UserRequest) {
+func (u *UserDto) Update(db *gorm.DB, requestData *dto.UserRequest) (*dto.UserResponse, *utils.ReturnMessage) {
 
+	//user := User{}
+
+	return nil, nil
 }
 
-//회원가입 진행.
-func (u *UserDto) SignupDelete(requestData *dto.UserRequest) {
-	fmt.Println("userDto : ", requestData)
+//회원 상세 정보.
+func (u *UserDto) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnMessage) {
+	user := User{}
+	db.LogMode(true)
+	res := db.Where("ID = ?", ID).First(&user)
+	if err := res.Error; err != nil {
+		return nil, errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+	}
+
+	outData := &dto.UserResponse{
+		ID:          user.ID,
+		Name:        user.Name,
+		Email:       user.Email,
+		PhoneNumber: user.PhoneNumber,
+		Role:        user.Role,
+		Avator:      user.Avator,
+	}
+	return outData, nil
+}
+
+//회원정보 삭제.
+func (u *UserDto) Delete(db *gorm.DB, ID string) (string, *utils.ReturnMessage) {
+
+	res := db.Where("id = ?", ID).Delete(&User{})
+
+	if err := res.Error; err != nil {
+		return "", errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+	}
+
+	return fmt.Sprintf("deleted ID [%v]", ID), nil
 }
