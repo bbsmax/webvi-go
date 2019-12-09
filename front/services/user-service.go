@@ -45,3 +45,9 @@ func (u *UserService) Create(requestData *dto.UserRequest, db *gorm.DB) (bool, *
 
 	return true, nil
 }
+
+func (u *UserService) Update(requestData *dto.UserRequest, db *gorm.DB) (bool, *utils.ReturnMessage) {
+	//1. ID와 password로 해당 회원이 맞는지 확인
+	//2. 회원이 맞으면 회원정보 업데이트
+	return true, nil
+}

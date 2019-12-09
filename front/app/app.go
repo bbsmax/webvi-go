@@ -46,6 +46,9 @@ func StartApp() {
 	router.HandleFunc("/login", userController.Login).Methods(http.MethodGet)
 	router.HandleFunc("/login", userController.Logout).Methods(http.MethodGet)
 	router.HandleFunc("/user", userController.Create).Methods(http.MethodPost)
+	router.HandleFunc("/user/{ID}", userController.Update).Methods(http.MethodPatch)
+	router.HandleFunc("/user/{ID}", userController.Get).Methods(http.MethodGet)
+	router.HandleFunc("/user/{ID}", userController.Delete).Methods(http.MethodDelete)
 
 	if err := http.ListenAndServe(config.Get("webserver.port").(string), router); err != nil {
 		log.Printf("Server Start Error:[%v]", err)
