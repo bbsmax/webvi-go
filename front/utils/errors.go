@@ -1,15 +1,29 @@
 package utils
 
+import (
+	"encoding/json"
+	"net/http"
+)
+
 type ErrorMessage struct {
 	Message    string `json:"message"`
 	StatusCode int    `json:"code"`
-	ErrorCode  error  `json:"error_code`
 }
 
-func (ErrorMessage) ErrorMsg(msg string, code int, errorCode error) *ErrorMessage {
+func (ErrorMessage) ReturnErrorMsg(msg string, code int) *ErrorMessage {
 	return &ErrorMessage{
 		Message:    msg,
 		StatusCode: code,
-		ErrorCode:  errorCode,
 	}
+}
+
+func (ErrorMessage) ErrorMsg(w http.ResponseWriter, msg string, code int) {
+	message := ErrorMessage{
+		Message:    msg,
+		StatusCode: code,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	outData, _ := json.Marshal(message)
+	w.WriteHeader(code)
+	w.Write(outData)
 }

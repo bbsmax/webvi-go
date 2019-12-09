@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"net/http"
-	dto2 "webvi-go/front/dto"
+	"webvi-go/front/dto"
 	"webvi-go/front/services"
+	"webvi-go/front/utils"
 )
 
 type UserController struct {
@@ -14,7 +15,8 @@ type UserController struct {
 }
 
 var (
-	userService = services.UserService{}
+	userService  = services.UserService{}
+	errorMessage = utils.ErrorMessage{}
 )
 
 //회원로그인
@@ -38,16 +40,29 @@ func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 	//userService := services.UserService{}
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
+		errorMessage.ErrorMsg(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 
-	requestData := &dto2.UserRequest{}
-	//get으로 넘어온 변수는 schema
+	requestData := &dto.UserRequest{}
+	//get으로 넘어온 변수는 schema r.Form
+	//post r.PostForm
+	//body r.Body
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		//TODO 에러메세지 발생.
+		errorMessage.ErrorMsg(w, "internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	//validate
-	userService.Signup(requestData, c.DB)
+	if err := requestData.Validate(); err != nil {
+		errorMessage.ErrorMsg(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if _, err := userService.Create(requestData, c.DB); err != nil {
+		errorMessage.ErrorMsg(w, err.Message, err.StatusCode)
+	}
 }
 
 //회원정보수정

@@ -24,18 +24,43 @@ func (u *UserDto) FindUser(requestData *dto.UserRequest, db *gorm.DB) (bool, *ut
 	db.LogMode(true)
 	query := db.Where("email = ?", userEmail).Find(&user)
 
-	if err := query.Error; err != nil {
-		return false, errorMsg.ErrorMsg("user find id", http.StatusConflict, fmt.Errorf("[%v]", err))
+	if res := query.RecordNotFound(); res {
+		return false, errorMsg.ReturnErrorMsg(fmt.Sprintf("user email [%v] not find", userEmail), http.StatusNoContent)
 	}
 
-	if res := query.RecordNotFound(); res {
-		return false, errorMsg.ErrorMsg("user find id", http.StatusNoContent, fmt.Errorf("[%v]", "not content"))
+	if err := query.Error; err != nil {
+		return false, errorMsg.ReturnErrorMsg(err.Error(), http.StatusInternalServerError)
 	}
 
 	return true, nil
 }
 
 //회원가입 진행.
-func (u *UserDto) Signup(requestData *dto.UserRequest) {
+func (u *UserDto) SignupCreate(requestData *dto.UserRequest, db *gorm.DB) *utils.ErrorMessage {
+
+	user := User{
+		ID:       requestData.ID,
+		Password: requestData.Password,
+		Name:     requestData.Name,
+		Email:    requestData.Email,
+		Role:     "BUSINESS_NORMAL",
+	}
+
+	res := db.Save(&user)
+
+	if err := res.Error; err != nil {
+		return errorMsg.ReturnErrorMsg(err.Error(), http.StatusInternalServerError)
+	}
+
+	return nil
+}
+
+//회원정보 업데이트.
+func (u *UserDto) SignupUpdate(requestData *dto.UserRequest) {
+
+}
+
+//회원가입 진행.
+func (u *UserDto) SignupDelete(requestData *dto.UserRequest) {
 	fmt.Println("userDto : ", requestData)
 }
