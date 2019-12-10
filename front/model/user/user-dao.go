@@ -56,11 +56,29 @@ func (u *UserDto) Create(db *gorm.DB, requestData *dto.UserRequest) *utils.Retur
 }
 
 //회원정보 업데이트.
-func (u *UserDto) Update(db *gorm.DB, requestData *dto.UserRequest) (*dto.UserResponse, *utils.ReturnMessage) {
+func (u *UserDto) Update(db *gorm.DB, ID string, updateData map[string]string) (*dto.UserResponse, *utils.ReturnMessage) {
 
-	//user := User{}
+	user := User{}
+	res := db.Model(&user).Where("ID = ?", ID).Updates(updateData)
 
-	return nil, nil
+	if err := res.Error; err != nil {
+		return nil, errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+	}
+
+	res = db.Where("ID = ?", ID).First(&user)
+	if err := res.Error; err != nil {
+		return nil, errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+	}
+
+	outData := &dto.UserResponse{
+		ID:     user.ID,
+		Name:   user.Name,
+		Email:  user.Email,
+		Phone:  user.Phone,
+		Role:   user.Role,
+		Avator: user.Avator,
+	}
+	return outData, nil
 }
 
 //회원 상세 정보.

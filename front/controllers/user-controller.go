@@ -40,6 +40,11 @@ func (c *UserController) Search(w http.ResponseWriter, r *http.Request) {
 //회원가입
 func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method != http.MethodPost {
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
 		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
@@ -70,6 +75,11 @@ func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 //상세 회원정보
 func (c *UserController) Get(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method != http.MethodGet {
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
 		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
@@ -98,6 +108,11 @@ func (c *UserController) Get(w http.ResponseWriter, r *http.Request) {
 //회원정보 업데이트
 func (c *UserController) Update(w http.ResponseWriter, r *http.Request) {
 
+	if r.Method != http.MethodPatch {
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
+
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		//TODO 에러메세지 발생.
 		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
@@ -123,21 +138,23 @@ func (c *UserController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//validate
-	if err := requestData.Validate(); err != nil {
-		responseMessage.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
-		return
-	}
-
 	requestData.ID = ID
 
-	if _, err := userService.Update(c.DB, requestData, r); err != nil {
+	if updateData, err := userService.Update(c.DB, requestData, r); err != nil {
 		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
+	} else {
+		responseMessage.ResponseData(w, updateData, http.StatusOK, "OK")
 	}
+
 }
 
 //회원삭제
 func (c *UserController) Delete(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodDelete {
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
 
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.

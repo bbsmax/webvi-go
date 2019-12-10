@@ -66,42 +66,53 @@ func (u *UserService) Update(db *gorm.DB, requestData *dto.UserRequest, r *http.
 
 	//2. 회원이 맞으면 회원정보 업데이트
 	//2-1 파일이 있는지 확인. 파일 있으면 업로드
-	config, err := toml.LoadFile("webvi-go/front/config.toml")
-	if err != nil {
-		return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
-	}
 
 	file, header, err := r.FormFile("avator")
 
-	fileExts := strings.Split(header.Filename, ".")
-	fileExt := fileExts[len(fileExts)-1]
-	fileName := requestData.ID + "." + fileExt
-	requestData.Avator = fileName
+	switch err {
+	case nil:
+		//업로드 파일이 있는 경우.
+		config, err := toml.LoadFile("webvi-go/front/config.toml")
+		if err != nil {
+			return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		}
 
-	if err != nil {
-		return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
-	}
+		fmt.Println("file : ", file)
+		fileExts := strings.Split(header.Filename, ".")
+		fileExt := fileExts[len(fileExts)-1]
+		fileName := requestData.ID + "." + fileExt
+		requestData.Avator = fileName
 
-	defer file.Close()
+		if err != nil {
+			return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		}
 
-	avatorUploadPath := config.Get("file.avator").(string)
-	out, err := os.Create(avatorUploadPath + fileName)
-	if err != nil {
-		return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
-	}
+		defer file.Close()
 
-	defer out.Close()
+		avatorUploadPath := config.Get("file.avator").(string)
+		out, err := os.Create(avatorUploadPath + fileName)
+		if err != nil {
+			return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		}
 
-	// write the content from POST to the file
-	_, err = io.Copy(out, file)
-	if err != nil {
-		return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		defer out.Close()
+
+		// write the content from POST to the file
+		_, err = io.Copy(out, file)
+		if err != nil {
+			return nil, returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		}
+	case http.ErrMissingFile:
+		//업로드 파일이 없는 경우.
+		fmt.Println("no file")
+	default:
+
 	}
 
 	updateData := u.updateUser(requestData)
 	//fmt.Println("updateData : ", updateData)
-	userDto.Update(db, updateData)
-	return nil, nil
+	return userDto.Update(db, requestData.ID, updateData)
+
 }
 
 func (u *UserService) Delete(db *gorm.DB, ID string) (string, *utils.ReturnMessage) {
@@ -118,7 +129,7 @@ func (u *UserService) updateUser(requestData *dto.UserRequest) map[string]string
 	}
 
 	if requestData.Password != "" {
-		returnData["name"] = requestData.Name
+		returnData["password"] = requestData.Password
 	}
 
 	if requestData.Phone != "" {
