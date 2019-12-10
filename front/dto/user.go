@@ -6,21 +6,22 @@ import (
 )
 
 type UserRequest struct {
-	ID          string `json:"ID"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	Password    string `json:"password"`
-	PhoneNumber string `json:"phone_number"`
-	Role        string `json:"role"`
+	ID       string `json:"ID"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Phone    string `json:"phone"`
+	Role     string `json:"role"`
+	Avator   string `json:"avator"`
 }
 
 type UserResponse struct {
-	ID          string `json:"ID"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phone_number"`
-	Role        string `json:"role"`
-	Avator      string `json:"avator"`
+	ID     string `json:"ID"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	Phone  string `json:"phone"`
+	Role   string `json:"role"`
+	Avator string `json:"avator"`
 }
 
 func (r UserRequest) Validate() error {

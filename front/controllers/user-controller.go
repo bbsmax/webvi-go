@@ -131,7 +131,7 @@ func (c *UserController) Update(w http.ResponseWriter, r *http.Request) {
 
 	requestData.ID = ID
 
-	if _, err := userService.Update(c.DB, requestData); err != nil {
+	if _, err := userService.Update(c.DB, requestData, r); err != nil {
 		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
 	}
 }

@@ -73,12 +73,12 @@ func (u *UserDto) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnM
 	}
 
 	outData := &dto.UserResponse{
-		ID:          user.ID,
-		Name:        user.Name,
-		Email:       user.Email,
-		PhoneNumber: user.PhoneNumber,
-		Role:        user.Role,
-		Avator:      user.Avator,
+		ID:     user.ID,
+		Name:   user.Name,
+		Email:  user.Email,
+		Phone:  user.Phone,
+		Role:   user.Role,
+		Avator: user.Avator,
 	}
 	return outData, nil
 }
