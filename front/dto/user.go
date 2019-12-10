@@ -29,7 +29,7 @@ func (r UserRequest) Validate() error {
 	if !utils.EmailCheck(r.Email) {
 		errs = errors.New("The email field should be a valid email address!")
 	} else if r.Password == "" {
-		errs = errors.New("The password field should be a valid password!")
+		errs = errors.New("The password field should be a required!")
 	} else if r.Name == "" {
 		errs = errors.New("The name field should be a required!")
 	}

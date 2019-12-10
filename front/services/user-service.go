@@ -25,7 +25,7 @@ var (
 func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 
 	//1. 이메일로 회원이 존재하는지 검사.
-	if isUser, err := userDto.Find(db, requestData); !isUser {
+	if isUser, err := userDto.FindByEmail(db, requestData.Email); !isUser {
 		//회원이 존재하지 않은 경우.
 		//2. 회원비밀번호를 sha256, sha512로 변환.
 		id := uuid.New()
@@ -37,7 +37,7 @@ func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *
 			return false, returnMsg.ReturnMsg(fmt.Sprintf("server error [%v]", err), http.StatusInternalServerError, "internal server error")
 		}
 
-		return true, returnMsg.ReturnMsg(fmt.Sprintf(`"ID" : "%v"`, requestData.ID), http.StatusCreated, "created")
+		return true, returnMsg.ReturnMsg(fmt.Sprintf(`{ID : %v}`, requestData.ID), http.StatusCreated, "created")
 
 	} else if isUser {
 		//회원이 존재하는 경우.
@@ -58,7 +58,7 @@ func (u *UserService) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.Ret
 func (u *UserService) Update(db *gorm.DB, requestData *dto.UserRequest, r *http.Request) (*dto.UserResponse, *utils.ReturnMessage) {
 	fmt.Println("useerRequest : ", requestData)
 	//1. ID와 password로 해당 회원이 맞는지 확인
-	if isUser, err := userDto.Find(db, requestData); !isUser {
+	if isUser, err := userDto.FindByID(db, requestData.ID); !isUser {
 		return nil, returnMsg.ReturnMsg(err.Message, http.StatusInternalServerError, "internal server error")
 	} else if err != nil {
 		return nil, returnMsg.ReturnMsg(err.Message, http.StatusInternalServerError, "internal server error")

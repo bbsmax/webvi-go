@@ -17,15 +17,33 @@ var (
 type UserDto struct{}
 
 //이메일로 회원유무를 검사.
-func (u *UserDto) Find(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
-	userEmail := requestData.Email
+func (u *UserDto) FindByEmail(db *gorm.DB, email string) (bool, *utils.ReturnMessage) {
+
 	user := User{}
 
 	db.LogMode(true)
-	query := db.Where("email = ?", userEmail).Find(&user)
+	query := db.Where("email = ?", email).Find(&user)
 
 	if res := query.RecordNotFound(); res {
-		return false, errorMsg.ReturnMsg(fmt.Sprintf("user email [%v] not find", userEmail), http.StatusNoContent, "no content")
+		return false, errorMsg.ReturnMsg(fmt.Sprintf("user email [%v] not find", email), http.StatusNoContent, "no content")
+	}
+
+	if err := query.Error; err != nil {
+		return false, errorMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+	}
+
+	return true, nil
+}
+
+func (u *UserDto) FindByID(db *gorm.DB, ID string) (bool, *utils.ReturnMessage) {
+
+	user := User{}
+
+	db.LogMode(true)
+	query := db.Where("ID = ?", ID).Find(&user)
+
+	if res := query.RecordNotFound(); res {
+		return false, errorMsg.ReturnMsg(fmt.Sprintf("user ID [%v] contents not find", ID), http.StatusNoContent, "no content")
 	}
 
 	if err := query.Error; err != nil {
@@ -43,7 +61,7 @@ func (u *UserDto) Create(db *gorm.DB, requestData *dto.UserRequest) *utils.Retur
 		Password: requestData.Password,
 		Name:     requestData.Name,
 		Email:    requestData.Email,
-		Role:     "BUSINESS_NORMAL",
+		Role:     "NORMAL",
 	}
 
 	res := db.Save(&user)
