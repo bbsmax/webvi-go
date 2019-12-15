@@ -22,6 +22,21 @@ var (
 	returnMsg = utils.ReturnMessage{}
 )
 
+//회원로그인
+func (u *UserService) Login(db *gorm.DB, requestData *dto.LoginRequest) (bool, *utils.ReturnMessage) {
+	return true, nil
+}
+
+//회원로그아웃
+func (u *UserService) Logout(db *gorm.DB, requestData *dto.LoginRequest) (bool, *utils.ReturnMessage) {
+	return true, nil
+}
+
+//회원정보찾기
+func (u *UserService) FindUser(db *gorm.DB, requestData *dto.LoginRequest) (bool, *utils.ReturnMessage) {
+	return true, nil
+}
+
 func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 
 	//1. 이메일로 회원이 존재하는지 검사.

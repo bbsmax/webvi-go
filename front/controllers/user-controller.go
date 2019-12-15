@@ -25,6 +25,30 @@ var (
 //회원로그인
 func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("login : ")
+	if r.Method != http.MethodPost {
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		//TODO 에러메세지 발생.
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	requestData := &dto.LoginRequest{}
+
+	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
+		//TODO 에러메세지 발생.
+		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	if err := requestData.Validate(); err != nil {
+		responseMessage.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
+		return
+	}
+
 }
 
 //회원로그아웃

@@ -2,12 +2,18 @@ package dto
 
 import (
 	"errors"
+	"fmt"
 	"webvi-go/front/utils"
 )
 
-const (
-	passwordPattern = "/^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{6,16}$/" //영문 + 특수문자 + 숫자정규식
-)
+type LoginRequest struct {
+	Email    string `json:"email""`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	LoginSession string `json:"loginSession"`
+}
 
 type UserRequest struct {
 	ID       string `json:"ID"`
@@ -28,14 +34,28 @@ type UserResponse struct {
 	Avator string `json:"avator"`
 }
 
+func (r LoginRequest) Validate() error {
+	var errs error
+
+	if !utils.EmailCheck(r.Email) {
+		errs = errors.New("The email field should be a valid email address!")
+	} else if !utils.PasswordCheck(r.Password) {
+		errs = errors.New("Password must be 8 characters or more, special characters, numbers, and letters.")
+	}
+	return errs
+}
+
 func (r UserRequest) Validate() error {
 	var errs error
 	if !utils.EmailCheck(r.Email) {
 		errs = errors.New("The email field should be a valid email address!")
 	} else if !utils.PasswordCheck(r.Password) {
 		errs = errors.New("Password must be 8 characters or more, special characters, numbers, and letters.")
-	} else if !utils.NameCheck(r.Name) {
-		errs = errors.New("PThe name must be at least 4 characters long.")
 	}
+
+	if ok, count := utils.NameCheck(r.Name); !ok {
+		errs = fmt.Errorf("The name must be at least %v characters long.", count)
+	}
+
 	return errs
 }
