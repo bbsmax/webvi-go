@@ -44,10 +44,13 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//validate 체크.
 	if err := requestData.Validate(); err != nil {
 		responseMessage.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
 		return
 	}
+
+	userService.Login(c.DB, requestData)
 
 }
 

@@ -1,7 +1,9 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"github.com/pelletier/go-toml"
@@ -15,6 +17,8 @@ import (
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
+
+var cache *redis.Client
 
 func StartApp() {
 
@@ -45,7 +49,21 @@ func StartApp() {
 	db.AutoMigrate(&user.User{})
 
 	defer db.Close()
-	//userController := controller.UserController{}
+
+	initCache()
+
+	aaa := struct {
+		ID       string
+		Password string
+	}{ID: "aaaaaa", Password: "bbbb"}
+
+	fmt.Println("aaa : ", aaa)
+	test, _ := json.Marshal(aaa)
+	fmt.Println("test", string(test))
+	pong := cache.Do("SETEX", "bb", "120", string(test))
+	//cache.Set("name", "Elliot", 0)
+	fmt.Println("pong : ", pong)
+
 	userController := controllers.UserController{
 		DB: db,
 	}
@@ -62,5 +80,13 @@ func StartApp() {
 	if err := http.ListenAndServe(config.Webserver.Port, router); err != nil {
 		log.Printf("Server Start Error:[%v]", err)
 	}
+}
 
+func initCache() {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "webvi.co.kr:7778",
+		Password: "webvi",
+	})
+
+	cache = client
 }

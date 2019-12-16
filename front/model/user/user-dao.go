@@ -14,10 +14,32 @@ var (
 	errorMsg = &utils.ReturnMessage{}
 )
 
-type UserDto struct{}
+type UserDao struct{}
+
+func (u *UserDao) Login(db *gorm.DB, requestData *dto.LoginRequest) (*dto.UserResponse, error) {
+	user := User{}
+	res := db.Where("email = ? AND password = ?").First(&user)
+
+	if res.RecordNotFound() {
+		return nil, fmt.Errorf("RecordNotFound")
+	} else if err := res.Error; err != nil {
+		return nil, err
+	}
+
+	userResponse := &dto.UserResponse{
+		ID:     user.ID,
+		Name:   user.Name,
+		Email:  user.Email,
+		Phone:  user.Phone,
+		Role:   user.Role,
+		Avator: user.Avator,
+	}
+
+	return userResponse, nil
+}
 
 //이메일로 회원유무를 검사.
-func (u *UserDto) FindByEmail(db *gorm.DB, email string) (bool, *utils.ReturnMessage) {
+func (u *UserDao) FindByEmail(db *gorm.DB, email string) (bool, *utils.ReturnMessage) {
 
 	user := User{}
 
@@ -35,7 +57,7 @@ func (u *UserDto) FindByEmail(db *gorm.DB, email string) (bool, *utils.ReturnMes
 	return true, nil
 }
 
-func (u *UserDto) FindByID(db *gorm.DB, ID string) (bool, *utils.ReturnMessage) {
+func (u *UserDao) FindByID(db *gorm.DB, ID string) (bool, *utils.ReturnMessage) {
 
 	user := User{}
 
@@ -54,7 +76,7 @@ func (u *UserDto) FindByID(db *gorm.DB, ID string) (bool, *utils.ReturnMessage) 
 }
 
 //회원가입 진행.
-func (u *UserDto) Create(db *gorm.DB, requestData *dto.UserRequest) *utils.ReturnMessage {
+func (u *UserDao) Create(db *gorm.DB, requestData *dto.UserRequest) *utils.ReturnMessage {
 
 	user := User{
 		ID:       requestData.ID,
@@ -74,7 +96,7 @@ func (u *UserDto) Create(db *gorm.DB, requestData *dto.UserRequest) *utils.Retur
 }
 
 //회원정보 업데이트.
-func (u *UserDto) Update(db *gorm.DB, ID string, updateData map[string]string) (*dto.UserResponse, *utils.ReturnMessage) {
+func (u *UserDao) Update(db *gorm.DB, ID string, updateData map[string]string) (*dto.UserResponse, *utils.ReturnMessage) {
 
 	user := User{}
 	res := db.Model(&user).Where("ID = ?", ID).Updates(updateData)
@@ -100,7 +122,7 @@ func (u *UserDto) Update(db *gorm.DB, ID string, updateData map[string]string) (
 }
 
 //회원 상세 정보.
-func (u *UserDto) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnMessage) {
+func (u *UserDao) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnMessage) {
 	user := User{}
 	db.LogMode(true)
 	res := db.Where("ID = ?", ID).First(&user)
@@ -120,7 +142,7 @@ func (u *UserDto) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnM
 }
 
 //회원정보 삭제.
-func (u *UserDto) Delete(db *gorm.DB, ID string) (string, *utils.ReturnMessage) {
+func (u *UserDao) Delete(db *gorm.DB, ID string) (string, *utils.ReturnMessage) {
 
 	res := db.Where("id = ?", ID).Delete(&User{})
 

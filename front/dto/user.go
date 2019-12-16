@@ -39,9 +39,9 @@ func (r LoginRequest) Validate() error {
 
 	if !utils.EmailCheck(r.Email) {
 		errs = errors.New("The email field should be a valid email address!")
-	} else if !utils.PasswordCheck(r.Password) {
+	} /*else if !utils.PasswordCheck(r.Password) {
 		errs = errors.New("Password must be 8 characters or more, special characters, numbers, and letters.")
-	}
+	}*/
 	return errs
 }
 

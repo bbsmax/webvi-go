@@ -18,12 +18,13 @@ type UserService struct{}
 
 var (
 	//UserDto 객체생성
-	userDto   = user.UserDto{}
+	userDao   = user.UserDao{}
 	returnMsg = utils.ReturnMessage{}
 )
 
 //회원로그인
 func (u *UserService) Login(db *gorm.DB, requestData *dto.LoginRequest) (bool, *utils.ReturnMessage) {
+	userDao.Login(db, requestData)
 	return true, nil
 }
 
@@ -40,7 +41,7 @@ func (u *UserService) FindUser(db *gorm.DB, requestData *dto.LoginRequest) (bool
 func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *utils.ReturnMessage) {
 
 	//1. 이메일로 회원이 존재하는지 검사.
-	if isUser, err := userDto.FindByEmail(db, requestData.Email); !isUser {
+	if isUser, err := userDao.FindByEmail(db, requestData.Email); !isUser {
 		//회원이 존재하지 않은 경우.
 		//2. 회원비밀번호를 sha256, sha512로 변환.
 		id := uuid.New()
@@ -48,7 +49,7 @@ func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *
 		requestData.ID = id.String()
 		requestData.Password = password
 		//3. 회원데이터 저장
-		if err := userDto.Create(db, requestData); err != nil {
+		if err := userDao.Create(db, requestData); err != nil {
 			return false, returnMsg.ReturnMsg(fmt.Sprintf("server error [%v]", err), http.StatusInternalServerError, "internal server error")
 		}
 
@@ -67,13 +68,13 @@ func (u *UserService) Create(db *gorm.DB, requestData *dto.UserRequest) (bool, *
 
 //회원의 상세정보
 func (u *UserService) Get(db *gorm.DB, ID string) (*dto.UserResponse, *utils.ReturnMessage) {
-	return userDto.Get(db, ID)
+	return userDao.Get(db, ID)
 }
 
 func (u *UserService) Update(db *gorm.DB, requestData *dto.UserRequest, r *http.Request) (*dto.UserResponse, *utils.ReturnMessage) {
 	fmt.Println("useerRequest : ", requestData)
 	//1. ID와 password로 해당 회원이 맞는지 확인
-	if isUser, err := userDto.FindByID(db, requestData.ID); !isUser {
+	if isUser, err := userDao.FindByID(db, requestData.ID); !isUser {
 		return nil, returnMsg.ReturnMsg(err.Message, http.StatusInternalServerError, "internal server error")
 	} else if err != nil {
 		return nil, returnMsg.ReturnMsg(err.Message, http.StatusInternalServerError, "internal server error")
@@ -126,14 +127,14 @@ func (u *UserService) Update(db *gorm.DB, requestData *dto.UserRequest, r *http.
 
 	updateData := u.updateUser(requestData)
 	//fmt.Println("updateData : ", updateData)
-	return userDto.Update(db, requestData.ID, updateData)
+	return userDao.Update(db, requestData.ID, updateData)
 
 }
 
 func (u *UserService) Delete(db *gorm.DB, ID string) (string, *utils.ReturnMessage) {
 	//1. ID와 password로 해당 회원이 맞는지 확인
 	//2. 회원이 맞으면 회원정보 업데이트
-	return userDto.Delete(db, ID)
+	return userDao.Delete(db, ID)
 }
 
 func (u *UserService) updateUser(requestData *dto.UserRequest) map[string]string {
