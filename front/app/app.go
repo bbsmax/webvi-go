@@ -18,7 +18,9 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-var cache *redis.Client
+var (
+	cache *redis.Client
+)
 
 func StartApp() {
 
@@ -50,7 +52,7 @@ func StartApp() {
 
 	defer db.Close()
 
-	initCache()
+	initCache(config)
 
 	aaa := struct {
 		ID       string
@@ -82,10 +84,10 @@ func StartApp() {
 	}
 }
 
-func initCache() {
+func initCache(config dto.Config) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "webvi.co.kr:7778",
-		Password: "webvi",
+		Addr:     config.Redis.Host + ":" + config.Redis.Port,
+		Password: config.Redis.Password,
 	})
 
 	cache = client
