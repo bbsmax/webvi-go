@@ -59,6 +59,15 @@ func StartApp() {
 		Password string
 	}{ID: "aaaaaa", Password: "bbbb"}
 
+	var passwords = "password"
+	var user = map[string]string{
+		"user1": "password",
+		"user2": "password2",
+	}
+
+	password, ok := user["user2"]
+	fmt.Println("password", passwords, password, ok)
+
 	fmt.Println("aaa : ", aaa)
 	test, _ := json.Marshal(aaa)
 	fmt.Println("test", string(test))
@@ -67,7 +76,8 @@ func StartApp() {
 	fmt.Println("pong : ", pong)
 
 	userController := controllers.UserController{
-		DB: db,
+		DB:     db,
+		Client: cache,
 	}
 	router := mux.NewRouter()
 	router.HandleFunc("/login", userController.Login).Methods(http.MethodPost)

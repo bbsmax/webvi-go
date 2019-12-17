@@ -34,6 +34,12 @@ type UserResponse struct {
 	Avator string `json:"avator"`
 }
 
+type SessionToken struct {
+	Name    string
+	Value   string
+	Expired int64
+}
+
 func (r LoginRequest) Validate() error {
 	var errs error
 

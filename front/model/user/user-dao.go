@@ -18,7 +18,7 @@ type UserDao struct{}
 
 func (u *UserDao) Login(db *gorm.DB, requestData *dto.LoginRequest) (*dto.UserResponse, error) {
 	user := User{}
-	res := db.Where("email = ? AND password = ?").First(&user)
+	res := db.Where("email = ? AND password = ?", requestData.Email, requestData.Password).First(&user)
 
 	if res.RecordNotFound() {
 		return nil, fmt.Errorf("RecordNotFound")

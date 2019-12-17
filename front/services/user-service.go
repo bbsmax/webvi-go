@@ -1,7 +1,9 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/pelletier/go-toml"
@@ -23,9 +25,25 @@ var (
 )
 
 //회원로그인
-func (u *UserService) Login(db *gorm.DB, requestData *dto.LoginRequest) (bool, *utils.ReturnMessage) {
-	userDao.Login(db, requestData)
-	return true, nil
+func (u *UserService) Login(db *gorm.DB, client *redis.Client, requestData *dto.LoginRequest) (string, *utils.ReturnMessage) {
+	userData, err := userDao.Login(db, requestData)
+
+	if err != nil {
+		if err.Error() == "RecordNotFound" {
+			errcode := returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "user not exist")
+			return "", errcode
+		}
+		errcode := returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		return "", errcode
+	}
+
+	token := uuid.New().String()
+	user, _ := json.Marshal(userData)
+
+	//redis에 토큰정보를 저장.
+	redisData := client.Do("SETEX", token, "120", string(user))
+	fmt.Printf("redisData : +%v", redisData)
+	return token, nil
 }
 
 //회원로그아웃

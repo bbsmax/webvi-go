@@ -8,31 +8,35 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/jinzhu/gorm"
 	"net/http"
+	"time"
 	"webvi-go/front/dto"
 	"webvi-go/front/services"
 	"webvi-go/front/utils"
+
+	"github.com/go-redis/redis"
 )
 
 type UserController struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	Client *redis.Client
 }
 
 var (
-	userService     = services.UserService{}
-	responseMessage = utils.ReturnMessage{}
+	userService = services.UserService{}
+	response    = utils.ReturnMessage{}
 )
 
 //회원로그인
 func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("login : ")
 	if r.Method != http.MethodPost {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
@@ -40,17 +44,28 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	//validate 체크.
 	if err := requestData.Validate(); err != nil {
-		responseMessage.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
+		response.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
 		return
 	}
 
-	userService.Login(c.DB, requestData)
+	token, err := userService.Login(c.DB, c.Client, requestData)
+
+	if err != nil {
+		response.ResponseMsg(w, err.Message, http.StatusInternalServerError, "user not exist")
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_token",
+		Value:   token,
+		Expires: time.Now().Add(120 * time.Second),
+	})
 
 }
 
@@ -68,13 +83,13 @@ func (c *UserController) Search(w http.ResponseWriter, r *http.Request) {
 func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
@@ -84,18 +99,18 @@ func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 	//body r.Body
 	if err := json.NewDecoder(r.Body).Decode(requestData); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	//validate
 	if err := requestData.Validate(); err != nil {
-		responseMessage.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
+		response.ResponseMsg(w, err.Error(), http.StatusBadRequest, "bad request")
 		return
 	}
 
 	if _, err := userService.Create(c.DB, requestData); err != nil {
-		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
+		response.ResponseMsg(w, err.Message, err.Code, err.Status)
 	}
 }
 
@@ -103,20 +118,20 @@ func (c *UserController) Create(w http.ResponseWriter, r *http.Request) {
 func (c *UserController) Get(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	param := mux.Vars(r)
 	var ID string
 	if id, err := uuid.Parse(param["ID"]); err != nil {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	} else {
 		ID = id.String()
@@ -125,31 +140,31 @@ func (c *UserController) Get(w http.ResponseWriter, r *http.Request) {
 	userData, err := userService.Get(c.DB, ID)
 
 	if err != nil {
-		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
+		response.ResponseMsg(w, err.Message, err.Code, err.Status)
 		return
 	}
 
-	responseMessage.ResponseData(w, userData, http.StatusOK, "OK")
+	response.ResponseData(w, userData, http.StatusOK, "OK")
 }
 
 //회원정보 업데이트
 func (c *UserController) Update(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPatch {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	param := mux.Vars(r)
 	var ID string
 	if id, err := uuid.Parse(param["ID"]); err != nil {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	} else {
 		ID = id.String()
@@ -161,16 +176,16 @@ func (c *UserController) Update(w http.ResponseWriter, r *http.Request) {
 	//body r.Body
 	decode := schema.NewDecoder()
 	if err := decode.Decode(requestData, r.PostForm); err != nil {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	requestData.ID = ID
 
 	if updateData, err := userService.Update(c.DB, requestData, r); err != nil {
-		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
+		response.ResponseMsg(w, err.Message, err.Code, err.Status)
 	} else {
-		responseMessage.ResponseData(w, updateData, http.StatusOK, "OK")
+		response.ResponseData(w, updateData, http.StatusOK, "OK")
 	}
 
 }
@@ -179,20 +194,20 @@ func (c *UserController) Update(w http.ResponseWriter, r *http.Request) {
 func (c *UserController) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodDelete {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
 		//TODO 에러메세지 발생.
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	param := mux.Vars(r)
 	var ID string
 	if id, err := uuid.Parse(param["ID"]); err != nil {
-		responseMessage.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
+		response.ResponseMsg(w, "internal server error", http.StatusInternalServerError, "internal server error")
 		return
 	} else {
 		ID = id.String()
@@ -201,9 +216,9 @@ func (c *UserController) Delete(w http.ResponseWriter, r *http.Request) {
 	deleteData, err := userService.Delete(c.DB, ID)
 
 	if err != nil {
-		responseMessage.ResponseMsg(w, err.Message, err.Code, err.Status)
+		response.ResponseMsg(w, err.Message, err.Code, err.Status)
 		return
 	}
 
-	responseMessage.ResponseData(w, deleteData, http.StatusOK, "OK")
+	response.ResponseData(w, deleteData, http.StatusOK, "OK")
 }
