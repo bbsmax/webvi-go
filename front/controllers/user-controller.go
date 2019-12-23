@@ -65,7 +65,7 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:    "session_token",
+		Name:    "x-access-token",
 		Value:   token.JwtTokenString,
 		Expires: token.CookieExpiredTime,
 	})
@@ -76,10 +76,8 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 
 func (c *UserController) Welcome(w http.ResponseWriter, r *http.Request) {
 	redisClient := c.Client
-	cookie, err := r.Cookie("session_token")
-	token := r.Header["session-token"]
+	cookie, err := r.Cookie("x-access-token")
 
-	fmt.Println("token : ", token)
 	if err != nil {
 		if err == http.ErrNoCookie {
 			w.WriteHeader(http.StatusUnauthorized)

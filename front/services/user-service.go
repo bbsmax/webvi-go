@@ -34,7 +34,7 @@ var (
 	//UserDto 객체생성
 	userDao           = user.UserDao{}
 	returnMsg         = utils.ReturnMessage{}
-	jwtExpiredTime    = time.Now().Add(30 * time.Second)
+	jwtExpiredTime    = time.Now().Add(2 * time.Second)
 	cookieExpiredTime = time.Now().Add(2 * time.Minute)
 	JWTKEY            = []byte("AllYourBase")
 )
