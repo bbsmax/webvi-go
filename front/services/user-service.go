@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 	"webvi-go/front/dto"
 	"webvi-go/front/model/user"
 	"webvi-go/front/utils"
@@ -18,23 +20,36 @@ import (
 
 type UserService struct{}
 
+type Claims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
+}
+
+type JwtResponse struct {
+	JwtTokenString    string
+	CookieExpiredTime time.Time
+}
+
 var (
 	//UserDto 객체생성
-	userDao   = user.UserDao{}
-	returnMsg = utils.ReturnMessage{}
+	userDao           = user.UserDao{}
+	returnMsg         = utils.ReturnMessage{}
+	jwtExpiredTime    = time.Now().Add(30 * time.Second)
+	cookieExpiredTime = time.Now().Add(2 * time.Minute)
+	JWTKEY            = []byte("AllYourBase")
 )
 
 //회원로그인
-func (u *UserService) Login(db *gorm.DB, client *redis.Client, requestData *dto.LoginRequest) (string, *utils.ReturnMessage) {
+func (u *UserService) Login(db *gorm.DB, client *redis.Client, requestData *dto.LoginRequest) (*JwtResponse, *utils.ReturnMessage) {
 	userData, err := userDao.Login(db, requestData)
 
 	if err != nil {
 		if err.Error() == "RecordNotFound" {
 			errcode := returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "user not exist")
-			return "", errcode
+			return nil, errcode
 		}
 		errcode := returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
-		return "", errcode
+		return nil, errcode
 	}
 
 	token := uuid.New().String()
@@ -43,7 +58,23 @@ func (u *UserService) Login(db *gorm.DB, client *redis.Client, requestData *dto.
 	//redis에 토큰정보를 저장.
 	redisData := client.Do("SETEX", token, "120", string(user))
 	fmt.Printf("redisData : +%v", redisData)
-	return token, nil
+
+	claims := &Claims{
+		Email: userData.Email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: jwtExpiredTime.Unix(),
+		},
+	}
+
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := jwtToken.SignedString(JWTKEY)
+
+	if err != nil {
+		errcode := returnMsg.ReturnMsg(err.Error(), http.StatusInternalServerError, "internal server error")
+		return nil, errcode
+	}
+
+	return &JwtResponse{JwtTokenString: tokenString, CookieExpiredTime: cookieExpiredTime}, nil
 }
 
 //회원로그아웃

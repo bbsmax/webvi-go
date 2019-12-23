@@ -3,10 +3,13 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/jinzhu/gorm"
+
 	"net/http"
 	"time"
 	"webvi-go/front/dto"
@@ -63,10 +66,85 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &http.Cookie{
 		Name:    "session_token",
-		Value:   token,
-		Expires: time.Now().Add(120 * time.Second),
+		Value:   token.JwtTokenString,
+		Expires: token.CookieExpiredTime,
 	})
 
+	fmt.Println("Hello!!!!!!!!!!!")
+
+}
+
+func (c *UserController) Welcome(w http.ResponseWriter, r *http.Request) {
+	redisClient := c.Client
+	cookie, err := r.Cookie("session_token")
+	token := r.Header["session-token"]
+
+	fmt.Println("token : ", token)
+	if err != nil {
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	sessionToken := cookie.Value
+
+	response := redisClient.Do("GET", sessionToken)
+	fmt.Println("response.val", response.Val())
+	if response == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	responseData := dto.UserResponse{}
+	fmt.Println("type :", reflect.TypeOf(response.Val()))
+	json.Unmarshal([]byte(response.Val().(string)), &responseData)
+
+	w.Write([]byte(fmt.Sprintf("Welcome %s!", responseData.Name)))
+}
+
+func (c *UserController) Refresh(w http.ResponseWriter, r *http.Request) {
+	redisClient := c.Client
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+
+			//w.WriteHeader(http.Status)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	sessionToken := cookie.Value
+
+	response := redisClient.Do("GET", sessionToken)
+
+	if response == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	// (END) The code uptil this point is the same as the first part of the `Welcome` route
+
+	// Now, create a new session token for the current user
+	newSessionToken := uuid.New().String()
+	_ = redisClient.Do("SETEX", newSessionToken, "120", response.Val())
+
+	// Delete the older session token
+	_ = redisClient.Do("DEL", sessionToken)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Set the new token as the users `session_token` cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_token",
+		Value:   newSessionToken,
+		Expires: time.Now().Add(30 * time.Second),
+	})
 }
 
 //회원로그아웃

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
@@ -54,26 +53,26 @@ func StartApp() {
 
 	initCache(config)
 
-	aaa := struct {
-		ID       string
-		Password string
-	}{ID: "aaaaaa", Password: "bbbb"}
-
-	var passwords = "password"
-	var user = map[string]string{
-		"user1": "password",
-		"user2": "password2",
-	}
-
-	password, ok := user["user2"]
-	fmt.Println("password", passwords, password, ok)
-
-	fmt.Println("aaa : ", aaa)
-	test, _ := json.Marshal(aaa)
-	fmt.Println("test", string(test))
-	pong := cache.Do("SETEX", "bb", "120", string(test))
-	//cache.Set("name", "Elliot", 0)
-	fmt.Println("pong : ", pong)
+	//aaa := struct {
+	//	ID       string
+	//	Password string
+	//}{ID: "aaaaaa", Password: "bbbb"}
+	//
+	//var passwords = "password"
+	//var user = map[string]string{
+	//	"user1": "password",
+	//	"user2": "password2",
+	//}
+	//
+	//password, ok := user["user2"]
+	//fmt.Println("password", passwords, password, ok)
+	//
+	//fmt.Println("aaa : ", aaa)
+	//test, _ := json.Marshal(aaa)
+	//fmt.Println("test", string(test))
+	//pong := cache.Do("SETEX", "bb", "120", string(test))
+	////cache.Set("name", "Elliot", 0)
+	//fmt.Println("pong : ", pong)
 
 	userController := controllers.UserController{
 		DB:     db,
@@ -81,6 +80,8 @@ func StartApp() {
 	}
 	router := mux.NewRouter()
 	router.HandleFunc("/login", userController.Login).Methods(http.MethodPost)
+	router.HandleFunc("/welcome", userController.Welcome).Methods(http.MethodGet)
+	router.HandleFunc("/refresh", userController.Refresh).Methods(http.MethodPost)
 	router.HandleFunc("/login", userController.Logout).Methods(http.MethodGet)
 	router.HandleFunc("/user", userController.Create).Methods(http.MethodPost)
 	router.HandleFunc("/user/{ID}", userController.Update).Methods(http.MethodPatch)
