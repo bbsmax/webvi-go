@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"reflect"
 
 	"github.com/google/uuid"
@@ -88,6 +89,29 @@ func (c *UserController) Welcome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionToken := cookie.Value
+
+	token, error := jwt.Parse(sessionToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("There was an error")
+		}
+		return []byte("AllYourBase"), nil
+	})
+
+	//fmt.Println("Hello", token, error)
+
+	if error != nil {
+		json.NewEncoder(w).Encode(fmt.Sprintf("error : %+v", error.Error()))
+		return
+	}
+
+	if token.Valid {
+		fmt.Println("token 성공")
+		json.NewEncoder(w).Encode("Success authorization token")
+		return
+	} else {
+		json.NewEncoder(w).Encode("Invalid authorization token")
+		return
+	}
 
 	response := redisClient.Do("GET", sessionToken)
 	fmt.Println("response.val", response.Val())
